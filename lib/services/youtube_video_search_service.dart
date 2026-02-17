@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'html_entities.dart';
+import 'youtube_innertube_config.dart';
 
 class YouTubeVideoSearchService {
-    String _normalizeUrl(String? url) {
+  String _normalizeUrl(String? url) {
     final u = (url ?? '').trim();
     if (u.isEmpty) return '';
     if (u.startsWith('//')) return 'https:' + u;
@@ -11,31 +12,116 @@ class YouTubeVideoSearchService {
     return 'https://' + u;
   }
 
-Future<List<VideoSearchResult>> searchVideos(String query, {int limit = 30}) async {
+  /// Busca 1 "página" de resultados.
+  ///
+  /// - Se [continuation] for null: baixa o HTML inicial e extrai ytInitialData + ytcfg.
+  /// - Se [continuation] não for null: usa o endpoint youtubei/v1/search para continuar.
+  ///
+  /// Retorna [VideoSearchPage] com lista + nextContinuation (se houver).
+  Future<VideoSearchPage> searchVideosPage(
+    String query, {
+    String? continuation,
+    YouTubeInnerTubeConfig? config,
+  }) async {
     final q = query.trim();
-    if (q.isEmpty) return [];
+    if (q.isEmpty) {
+      return VideoSearchPage(items: const [], nextContinuation: null, config: config);
+    }
 
-    final url = Uri.parse(
-      'https://www.youtube.com/results?search_query=${Uri.encodeQueryComponent(q)}',
-    );
+    if (continuation == null) {
+      final url = Uri.parse(
+        'https://www.youtube.com/results?search_query=${Uri.encodeQueryComponent(q)}',
+      );
 
-    final resp = await http.get(url, headers: {
-      'Accept': 'text/html,*/*',
-      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari',
+      final resp = await http.get(url, headers: _headers());
+      if (resp.statusCode != 200) {
+        throw Exception('Falha ao buscar vídeos (HTTP ${resp.statusCode})');
+      }
+
+      final html = utf8.decode(resp.bodyBytes);
+
+      final cfg = _extractInnerTubeConfig(html);
+      final jsonStr = _extractYtInitialData(html);
+      if (jsonStr == null) {
+        throw Exception('Não foi possível extrair dados da busca (ytInitialData).');
+      }
+      final data = jsonDecode(jsonStr);
+
+      final results = _parseVideoRenderers(data);
+      final next = _findContinuationToken(data);
+
+      // remove duplicados
+      final seen = <String>{};
+      final out = <VideoSearchResult>[];
+      for (final r in results) {
+        if (seen.add(r.videoUrl)) out.add(r);
+      }
+
+      return VideoSearchPage(items: out, nextContinuation: next, config: cfg);
+    }
+
+    // continuação via youtubei
+    final cfg = config;
+    if (cfg == null || cfg.apiKey.isEmpty) {
+      throw Exception('Configuração do InnerTube ausente para continuação.');
+    }
+
+    final url = Uri.parse('https://www.youtube.com/youtubei/v1/search?key=${cfg.apiKey}');
+    final body = jsonEncode({
+      'context': cfg.context,
+      'continuation': continuation,
     });
 
+    final resp = await http.post(url, headers: _youtubeiHeaders(cfg), body: body);
     if (resp.statusCode != 200) {
-      throw Exception('Falha ao buscar vídeos (HTTP ${resp.statusCode})');
+      throw Exception('Falha ao continuar busca (HTTP ${resp.statusCode}).');
     }
 
-    final html = resp.body;
-    final jsonStr = _extractYtInitialData(html);
-    if (jsonStr == null) {
-      throw Exception('Não foi possível extrair dados da busca (ytInitialData).');
+    final data = jsonDecode(utf8.decode(resp.bodyBytes));
+    final results = _parseVideoRenderers(data);
+    final next = _findContinuationToken(data);
+
+    // dedup (esta página pode repetir alguns itens)
+    final seen = <String>{};
+    final out = <VideoSearchResult>[];
+    for (final r in results) {
+      if (seen.add(r.videoUrl)) out.add(r);
     }
 
-    final data = jsonDecode(jsonStr);
+    return VideoSearchPage(items: out, nextContinuation: next, config: cfg);
+  }
 
+  /// Conveniência: baixa até [limit] vídeos, consumindo várias páginas (quando disponível).
+  Future<List<VideoSearchResult>> searchVideos(String query, {int limit = 200}) async {
+    final out = <VideoSearchResult>[];
+    String? cont;
+    YouTubeInnerTubeConfig? cfg;
+
+    while (out.length < limit) {
+      final page = await searchVideosPage(query, continuation: cont, config: cfg);
+      cfg ??= page.config;
+      cont = page.nextContinuation;
+
+      if (page.items.isEmpty) break;
+
+      // dedup global
+      final seen = out.map((e) => e.videoUrl).toSet();
+      for (final it in page.items) {
+        if (out.length >= limit) break;
+        if (seen.add(it.videoUrl)) out.add(it);
+      }
+
+      if (cont == null) break;
+    }
+
+    return out;
+  }
+
+  // -------------------------
+  // Parsing
+  // -------------------------
+
+  List<VideoSearchResult> _parseVideoRenderers(dynamic data) {
     final results = <VideoSearchResult>[];
     _walk(data, (node) {
       if (node is Map && node.containsKey('videoRenderer')) {
@@ -67,25 +153,109 @@ Future<List<VideoSearchResult>> searchVideos(String query, {int limit = 30}) asy
         }
       }
     });
+    return results;
+  }
 
-    // remove duplicados e limita
-    final seen = <String>{};
-    final out = <VideoSearchResult>[];
-    for (final r in results) {
-      if (seen.add(r.videoUrl)) out.add(r);
-      if (out.length >= limit) break;
-    }
-    return out;
+  String? _findContinuationToken(dynamic data) {
+    String? token;
+
+    _walk(data, (node) {
+      if (token != null) return;
+      if (node is Map && node.containsKey('continuationItemRenderer')) {
+        final cir = node['continuationItemRenderer'];
+        if (cir is Map) {
+          final endpoint = cir['continuationEndpoint'];
+          if (endpoint is Map) {
+            final cc = endpoint['continuationCommand'];
+            if (cc is Map) {
+              final t = (cc['token'] ?? '').toString();
+              if (t.isNotEmpty) token = t;
+            }
+          }
+        }
+      }
+    });
+
+    return token;
   }
 
   // -------------------------
-  // helpers (parecido com o service de canais)
+  // ytcfg / innertube config extraction
   // -------------------------
+
+  YouTubeInnerTubeConfig _extractInnerTubeConfig(String html) {
+    // api key
+    String apiKey = '';
+    final mKey = RegExp(r'"INNERTUBE_API_KEY"\s*:\s*"([^"]+)"').firstMatch(html);
+    if (mKey != null) apiKey = mKey.group(1) ?? '';
+
+    // client name + version
+    String clientName = '';
+    String clientVersion = '';
+    final mName = RegExp(r'"INNERTUBE_CLIENT_NAME"\s*:\s*"([^"]+)"').firstMatch(html);
+    if (mName != null) clientName = mName.group(1) ?? '';
+    final mVer = RegExp(r'"INNERTUBE_CLIENT_VERSION"\s*:\s*"([^"]+)"').firstMatch(html);
+    if (mVer != null) clientVersion = mVer.group(1) ?? '';
+
+    // context: extraímos o objeto INNERTUBE_CONTEXT (é JSON)
+    Map<String, dynamic> context = {};
+    final idx = html.indexOf('"INNERTUBE_CONTEXT"');
+    if (idx != -1) {
+      final start = html.indexOf('{', idx);
+      if (start != -1) {
+        int depth = 0;
+        for (int i = start; i < html.length; i++) {
+          final ch = html[i];
+          if (ch == '{') depth++;
+          if (ch == '}') depth--;
+          if (depth == 0) {
+            final raw = html.substring(start, i + 1);
+            try {
+              context = jsonDecode(raw) as Map<String, dynamic>;
+            } catch (_) {}
+            break;
+          }
+        }
+      }
+    }
+
+    return YouTubeInnerTubeConfig(
+      apiKey: apiKey,
+      clientName: clientName,
+      clientVersion: clientVersion,
+      context: context,
+    );
+  }
+
+  // -------------------------
+  // helpers
+  // -------------------------
+
+  Map<String, String> _headers() => {
+        'Accept': 'text/html,*/*',
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari',
+      };
+
+  Map<String, String> _youtubeiHeaders(YouTubeInnerTubeConfig cfg) => {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': _headers()['User-Agent']!,
+        if (cfg.clientName.isNotEmpty) 'X-Youtube-Client-Name': cfg.clientName,
+        if (cfg.clientVersion.isNotEmpty) 'X-Youtube-Client-Version': cfg.clientVersion,
+        'Origin': 'https://www.youtube.com',
+        'Referer': 'https://www.youtube.com/',
+      };
+
   String? _extractYtInitialData(String html) {
+    // YouTube pode usar "var ytInitialData = ..." ou "ytInitialData = ..."
     final idx = html.indexOf('var ytInitialData =');
-    if (idx == -1) return null;
-    final start = html.indexOf('{', idx);
+    final idx2 = html.indexOf('ytInitialData =');
+    final use = (idx == -1) ? idx2 : idx;
+    if (use == -1) return null;
+
+    final start = html.indexOf('{', use);
     if (start == -1) return null;
+
     int depth = 0;
     for (int i = start; i < html.length; i++) {
       final ch = html[i];
@@ -123,6 +293,19 @@ Future<List<VideoSearchResult>> searchVideos(String query, {int limit = 30}) asy
   }
 }
 
+
+class VideoSearchPage {
+  final List<VideoSearchResult> items;
+  final String? nextContinuation;
+  final YouTubeInnerTubeConfig? config;
+
+  VideoSearchPage({
+    required this.items,
+    required this.nextContinuation,
+    required this.config,
+  });
+}
+
 class VideoSearchResult {
   final String videoUrl;
   final String title;
@@ -141,13 +324,11 @@ class VideoSearchResult {
   });
 
   Map<String, dynamic> toMap() => {
-    'videoUrl': videoUrl,
-    'title': title,
-    'channel': channel,
-    'thumb': thumb,
-    'publishedText': publishedText,
-    // mantemos publishedMillis ausente/0 (o SearchPage já faz fallback)
-    'publishedMillis': 0,
-    'durationText': durationText,
-  };
+        'videoUrl': videoUrl,
+        'title': title,
+        'channel': channel,
+        'thumb': thumb,
+        'publishedText': publishedText,
+        'durationText': durationText,
+      };
 }

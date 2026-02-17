@@ -82,7 +82,7 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
                   title: Text(title),
                   subtitle: const Text('Canal favorito'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.star),
+                    icon: const Icon(Icons.star, color: Colors.amber),
                     tooltip: 'Remover favorito',
                     onPressed: () async {
                       await AppDb.toggleFavChannel(channelUrl: url, title: title, thumb: thumb);
@@ -131,7 +131,7 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
                         children: [
                           if (read) const Icon(Icons.done_all),
                           IconButton(
-                            icon: const Icon(Icons.star),
+                            icon: const Icon(Icons.star, color: Colors.amber),
                             tooltip: 'Remover favorito',
                             onPressed: () async {
                               await AppDb.toggleFavVideo(videoUrl: url, title: title, channel: channel, thumb: thumb);
