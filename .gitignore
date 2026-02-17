@@ -1,0 +1,24 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+**/*.apk
+**/*.aab
+**/*.keystore
+**/*.jks
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Flutter / Dart (se aplicável)
+.dart_tool/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# OS
+.DS_Store
+Thumbs.db

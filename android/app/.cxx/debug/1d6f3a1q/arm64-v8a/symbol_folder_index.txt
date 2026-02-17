@@ -1,0 +1,1 @@
+/home/antonio/Dev/newstube/android/app/build/intermediates/cxx/debug/1d6f3a1q/obj/arm64-v8a
