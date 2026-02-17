@@ -1,43 +1,75 @@
+# NewsTube
+
+**NewsTube** is a free and open-source application that transforms YouTube videos into a calm, readable digital newspaper by extracting and transcribing their content.
+
+It is designed for people who want to practice **digital detox**, reduce visual overload, and consume information in a more intentional and mindful way.
+
+Originally developed in Portuguese, NewsTube is built to help people — not to capture attention.
 
 ---
 
-## 📜 License
+## 🌱 Philosophy
 
-This project is released as a **public-good application**.
+Modern video platforms are optimized for engagement, not reflection.  
+NewsTube offers a different approach to online information:
 
-There are:
-- No paid features
-- No subscriptions
-- No commercial intentions
+- Read instead of watch  
+- Reflect instead of scroll  
+- Choose content intentionally  
+- Reduce cognitive and emotional overload  
 
-The license exists to protect user freedom and project openness.
+The project is **non-commercial**, **ad-free**, **privacy-respecting**, and **free forever**.
 
----
-
-## 🧭 Project Status
-
-NewsTube is functional and actively evolving.
-
-Planned improvements include:
-- Enhanced text formatting
-- Better translation quality
-- Improved offline reading experience
-- Accessibility refinements
+NewsTube exists solely as a tool to support healthier information consumption.
 
 ---
 
-## 🤝 Contributing
+## 📰 What Is NewsTube?
 
-Contributions are welcome if they align with the project's philosophy:
-- Respect for users
-- No monetization
-- No tracking
-- No attention-driven design
+NewsTube extracts transcripts from YouTube videos and presents them as clean, readable text — similar to a digital newspaper.
+
+Instead of watching videos, users can **read the content**, focus on the information, and disengage from algorithm-driven stimulation.
 
 ---
 
-## ❤️ Final Note
+## ✨ Features
 
-NewsTube was created to help people reconnect with information calmly and consciously.
+- 📄 Extracts video transcripts using **NewPipeExtractor**
+- 📰 Converts video content into a **newspaper-style reading experience**
+- 🌍 Supports **translation of transcriptions** into other languages
+- 🧘 Designed specifically for **digital detox and mindful use**
+- 🔓 No ads, no tracking, no login required
+- 📱 Lightweight and focused on readability
+- 🛡️ No dependency on Google services or official YouTube APIs
 
-If it helps even one person reduce digital noise, it has fulfilled its purpose.
+---
+
+## 🚫 What NewsTube Is *Not*
+
+- ❌ No video recommendations
+- ❌ No infinite scrolling
+- ❌ No attention manipulation
+- ❌ No user profiling or analytics
+- ❌ No monetization
+
+---
+
+## 🛠️ Technology
+
+- **NewPipeExtractor** for metadata and transcript extraction
+- Independent from the official YouTube API
+- Works without Google Play Services
+
+---
+
+## 🧑‍🤝‍🧑 Who Is This For?
+
+- People seeking **digital minimalism**
+- Users practicing **mindfulness or intentional living**
+- Readers who prefer **text over video**
+- Anyone who wants to stay informed without visual overload
+
+---
+
+## 📂 Project Structure (example)
+
