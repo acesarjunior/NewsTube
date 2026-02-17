@@ -1,43 +1,16 @@
+# newstube
 
----
+A new Flutter project.
 
-## 📜 License
+## Getting Started
 
-This project is released as a **public-good application**.
+This project is a starting point for a Flutter application.
 
-There are:
-- No paid features
-- No subscriptions
-- No commercial intentions
+A few resources to get you started if this is your first Flutter project:
 
-The license exists to protect user freedom and project openness.
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
----
-
-## 🧭 Project Status
-
-NewsTube is functional and actively evolving.
-
-Planned improvements include:
-- Enhanced text formatting
-- Better translation quality
-- Improved offline reading experience
-- Accessibility refinements
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome if they align with the project's philosophy:
-- Respect for users
-- No monetization
-- No tracking
-- No attention-driven design
-
----
-
-## ❤️ Final Note
-
-NewsTube was created to help people reconnect with information calmly and consciously.
-
-If it helps even one person reduce digital noise, it has fulfilled its purpose.
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
