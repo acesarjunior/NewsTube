@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="https://github.com/acesarjunior/NewsTube/blob/main/screenshots/banner.png?raw=true" alt="NewsTube Banner">
+</p>
+
+<p align="center">
+  <strong>Turn YouTube videos into a digital newspaper</strong>
+</p>
+
+---
+
 # NewsTube
 
 **NewsTube** is a free and open-source application that transforms YouTube videos into a calm, readable digital newspaper by extracting and transcribing their content.
@@ -46,8 +56,6 @@ Instead of watching videos, users can **read the content**, focus on the informa
 
 ## 🚫 What NewsTube Is *Not*
 
-- ❌ No video recommendations
-- ❌ No infinite scrolling
 - ❌ No attention manipulation
 - ❌ No user profiling or analytics
 - ❌ No monetization
