@@ -28,6 +28,25 @@ class OkHttpDownloader : Downloader() {
             for (v in values) builder.addHeader(k, v)
         }
 
+        // ✅ Headers defensivos (reduz "Could not get visitor data" / páginas de consentimento)
+        val hasHeader = { name: String ->
+            headerMap.keys.any { it.equals(name, ignoreCase = true) }
+        }
+
+        if (!hasHeader("User-Agent")) {
+            builder.header(
+                "User-Agent",
+                "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            )
+        }
+        if (!hasHeader("Accept-Language")) {
+            builder.header("Accept-Language", "en-US,en;q=0.9")
+        }
+        // Cookie de consentimento (ajuda em alguns países/redes)
+        if (!hasHeader("Cookie")) {
+            builder.header("Cookie", "CONSENT=YES+1; SOCS=CAI;")
+        }
+
         // Content-Type (se o extractor já definiu)
         val contentType = headerMap.entries
             .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }

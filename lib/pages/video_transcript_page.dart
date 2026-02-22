@@ -187,12 +187,15 @@ _status = 'Legenda: ${(r.captionLang ?? "").trim()}'.trim();
               ),
               ...langs.map((k) {
                 final label = _langLabel[k] ?? k;
-                return RadioListTile<String>(
-                  value: k,
-                  groupValue: _targetLang,
+                return ListTile(
+                  leading: Radio<String>(
+                    value: k,
+                    groupValue: _targetLang,
+                    onChanged: (v) => Navigator.pop(ctx, v),
+                  ),
                   title: Text(label),
                   subtitle: Text(k),
-                  onChanged: (v) => Navigator.pop(ctx, v),
+                  onTap: () => Navigator.pop(ctx, k),
                 );
               }),
             ],

@@ -30,10 +30,14 @@ class TranscriptService {
 
       final has = cap['hasCaptions'] == true;
       if (!has) {
+        final err = (cap['error'] ?? '').toString().trim();
+        if (err.isNotEmpty && err != 'NO_TRACK_FOUND') {
+          return TranscriptResult(ok: false, text: '', message: 'Extractor: $err');
+        }
         return const TranscriptResult(
           ok: false,
           text: '',
-          message: 'Este vídeo não possui legendas disponíveis. Sem áudio/transcrição offline, não é possível gerar texto.',
+          message: 'Não foi possível obter legendas via extractor (o YouTube pode ter mudado; atualize o extractor ou tente novamente).',
         );
       }
 

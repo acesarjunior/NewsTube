@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -16,18 +18,15 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ABIs para emulador + devices reais
+        // ✅ Gera APK/AAB compatível com qualquer arquitetura Android suportada
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
-
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-
-        // Necessário para minSdk < 33 com NewPipeExtractor
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -35,7 +34,6 @@ android {
         jvmTarget = "17"
     }
 
-    // Ajuda em alguns cenários de libs nativas no Android 11
     packaging {
         jniLibs {
             useLegacyPackaging = true
@@ -43,17 +41,41 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("debug") {
+            // padrão
+        }
+
+        getByName("release") {
             signingConfig = signingConfigs.getByName("debug")
+
+            // ✅ Mantém minify (R8) funcionando sem quebrar o extractor/Rhino/Jsoup
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    // Flavors (Kotlin DSL correto)
+    flavorDimensions += "flavor"
+
+    productFlavors {
+        create("staging") {
+            dimension = "flavor"
         }
     }
 }
 
 dependencies {
-    // ✅ COORDENADA CERTA do JitPack (minúscula) – v0.25.2
+    // NewPipe Extractor (usado pelo MethodChannel NativeExtractor)
     implementation("com.github.teamnewpipe:newpipeextractor:v0.25.2")
-
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // ✅ Corrige "Missing class com.google.re2j.*" (referência opcional do Jsoup)
+    implementation("com.google.re2j:re2j:1.7")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.2")
 }

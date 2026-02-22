@@ -41,7 +41,7 @@ class MainActivity : FlutterActivity() {
                                 val found = findCaptionUrlByReflection(info, preferLang)
 
                                 if (found == null) {
-                                    result.success(hashMapOf<String, Any?>("hasCaptions" to false))
+                                    result.success(hashMapOf<String, Any?>("hasCaptions" to false, "error" to "NO_TRACK_FOUND"))
                                 } else {
                                     result.success(
                                         hashMapOf(
@@ -52,7 +52,7 @@ class MainActivity : FlutterActivity() {
                                     )
                                 }
                             } catch (e: Exception) {
-                                result.error("CAPTION_FAIL", shortErr(e), null)
+                                result.success(hashMapOf<String, Any?>("hasCaptions" to false, "error" to shortErr(e)))
                             }
                         }.start()
                     }
@@ -180,10 +180,13 @@ class MainActivity : FlutterActivity() {
     private fun findCaptionUrlByReflection(streamInfo: Any, preferLang: String): Pair<String, String>? {
         val containers = arrayOf(
             "getSubtitles",
+            "getSubtitlesStreams",
             "getSubtitleTracks",
+            "getCaptionTracks",
             "getCaptions",
             "getClosedCaptions",
-            "getSubtitlesDefault"
+            "getSubtitlesDefault",
+            "getSubtitlesDefaultStream"
         )
 
         for (mName in containers) {
@@ -243,7 +246,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun getTrackUrl(track: Any): String? {
-        val names = arrayOf("getUrl", "getContent", "getCaptionUrl", "getSubtitleUrl", "url")
+        val names = arrayOf("getUrl", "getContent", "getDeliveryUrl", "getBaseUrl", "getCaptionUrl", "getSubtitleUrl", "url")
         for (n in names) {
             try {
                 val m = track.javaClass.methods.firstOrNull { it.name == n && it.parameterTypes.isEmpty() }
@@ -255,7 +258,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun getTrackLang(track: Any): String? {
-        val names = arrayOf("getLanguageCode", "getLang", "getLanguage", "languageCode", "lang")
+        val names = arrayOf("getLanguageCode", "getLanguageTag", "getLocale", "getLang", "getLanguage", "languageCode", "lang")
         for (n in names) {
             try {
                 val m = track.javaClass.methods.firstOrNull { it.name == n && it.parameterTypes.isEmpty() }

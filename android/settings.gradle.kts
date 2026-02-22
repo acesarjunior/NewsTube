@@ -8,12 +8,27 @@ pluginManagement {
             flutterSdkPath
         }
 
+    // ✅ This is what provides dev.flutter.flutter-plugin-loader
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven(url = "https://jitpack.io")
+        // (Optional but harmless) Flutter's Maven repo for engine artifacts
+        maven(url = "https://storage.googleapis.com/download.flutter.io")
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+        maven(url = "https://jitpack.io")
+        // ✅ Flutter's Maven repo for io.flutter:* artifacts (embedding/abi)
+        maven(url = "https://storage.googleapis.com/download.flutter.io")
     }
 }
 
