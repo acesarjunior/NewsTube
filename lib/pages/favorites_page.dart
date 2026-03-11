@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/db.dart';
+import '../services/app_strings.dart';
 import 'channel_page.dart';
 import 'video_transcript_page.dart';
 
@@ -63,13 +64,15 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
+    final s = AppStrings.of(context);
+
     return RefreshIndicator(
       onRefresh: reload,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           if (_channels.isNotEmpty) ...[
-            const Text('Canais', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(s.t('channels'), style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             ..._channels.map((c) {
               final url = (c['channel_url'] ?? '').toString();
@@ -80,10 +83,10 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
                 child: ListTile(
                   leading: _thumb(context, thumb, fallback: Icons.person_outline),
                   title: Text(title),
-                  subtitle: const Text('Canal favorito'),
+                  subtitle: Text(s.t('favorite_channel')),
                   trailing: IconButton(
                     icon: const Icon(Icons.star, color: Colors.amber),
-                    tooltip: 'Remover favorito',
+                    tooltip: s.t('remove_favorite'),
                     onPressed: () async {
                       await AppDb.toggleFavChannel(channelUrl: url, title: title, thumb: thumb);
                       await reload();
@@ -104,7 +107,7 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
           ],
 
           if (_videos.isNotEmpty) ...[
-            const Text('Vídeos', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(s.t('videos'), style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             ..._videos.map((v) {
               final url = (v['video_url'] ?? '').toString();
@@ -125,14 +128,14 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
                             ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
                             : null,
                       ),
-                      subtitle: Text(read ? '$channel • Lido' : channel),
+                      subtitle: Text(read ? '$channel • ${s.t('read')}' : channel),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (read) const Icon(Icons.done_all),
                           IconButton(
                             icon: const Icon(Icons.star, color: Colors.amber),
-                            tooltip: 'Remover favorito',
+                            tooltip: s.t('remove_favorite'),
                             onPressed: () async {
                               await AppDb.toggleFavVideo(videoUrl: url, title: title, channel: channel, thumb: thumb);
                               await reload();
@@ -158,7 +161,7 @@ Widget _thumb(BuildContext context, String url, {double w = 52, double h = 52, I
 
           if (_channels.isEmpty && _videos.isEmpty) ...[
             const SizedBox(height: 24),
-            const Center(child: Text('Nenhum favorito ainda.')),
+            Center(child: Text(s.t('no_favorites'))),
           ],
         ],
       ),

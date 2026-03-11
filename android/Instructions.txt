@@ -1,0 +1,8 @@
+flutter clean
+flutter pub get
+
+cd android
+./gradlew clean
+./gradlew assembleStagingRelease --stacktrace
+cd ..
+find . -iname "*staging*release*.apk" -o -iname "*release*.apk"

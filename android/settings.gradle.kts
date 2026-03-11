@@ -8,7 +8,6 @@ pluginManagement {
             flutterSdkPath
         }
 
-    // ✅ This is what provides dev.flutter.flutter-plugin-loader
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
@@ -16,7 +15,6 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         maven(url = "https://jitpack.io")
-        // (Optional but harmless) Flutter's Maven repo for engine artifacts
         maven(url = "https://storage.googleapis.com/download.flutter.io")
     }
 }
@@ -27,7 +25,6 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven(url = "https://jitpack.io")
-        // ✅ Flutter's Maven repo for io.flutter:* artifacts (embedding/abi)
         maven(url = "https://storage.googleapis.com/download.flutter.io")
     }
 }
@@ -35,7 +32,7 @@ dependencyResolutionManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.11.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
 }
 
 include(":app")

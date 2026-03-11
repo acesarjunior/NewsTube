@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../data/db.dart';
+import '../services/app_strings.dart';
 import '../services/youtube_channel_videos_service.dart';
 import 'video_transcript_page.dart';
 import '../services/youtube_innertube_config.dart';
+import '../widgets/app_shell_actions.dart';
 
 class ChannelPage extends StatefulWidget {
   final String channelUrl;
@@ -80,7 +82,8 @@ class _ChannelPageState extends State<ChannelPage> {
       });
 
       if (_videos.isEmpty) {
-        setState(() => _error = 'Nenhum vídeo encontrado para este canal.');
+        final s = AppStrings.of(context);
+        setState(() => _error = s.t('no_video_found_channel'));
       }
     } catch (e) {
       if (!mounted) return;
@@ -125,11 +128,11 @@ class _ChannelPageState extends State<ChannelPage> {
       });
     } catch (e) {
       if (!mounted) return;
+      final s = AppStrings.of(context);
       setState(() {
         _loadingMore = false;
-        // Não derruba a tela inteira: só marca que não tem mais, e mostra um aviso leve.
         _hasMore = false;
-        _error = 'Não foi possível carregar mais vídeos: $e';
+        _error = '${s.t('load_more_failed')}: $e';
       });
     }
   }
@@ -165,12 +168,14 @@ class _ChannelPageState extends State<ChannelPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title.isNotEmpty ? widget.title : 'Canal'),
+        title: Text(widget.title.isNotEmpty ? widget.title : s.t('channel')),
         actions: [
+          const AppShellActions(),
           IconButton(
-            tooltip: 'Recarregar',
+            tooltip: s.t('reload'),
             icon: const Icon(Icons.refresh),
             onPressed: _loadFirst,
           ),

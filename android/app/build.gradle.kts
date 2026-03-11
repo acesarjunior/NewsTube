@@ -1,8 +1,6 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -18,7 +16,6 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ✅ Gera APK/AAB compatível com qualquer arquitetura Android suportada
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
@@ -41,14 +38,8 @@ android {
     }
 
     buildTypes {
-        getByName("debug") {
-            // padrão
-        }
-
         getByName("release") {
             signingConfig = signingConfigs.getByName("debug")
-
-            // ✅ Mantém minify (R8) funcionando sem quebrar o extractor/Rhino/Jsoup
             isMinifyEnabled = true
             isShrinkResources = true
 
@@ -59,7 +50,6 @@ android {
         }
     }
 
-    // Flavors (Kotlin DSL correto)
     flavorDimensions += "flavor"
 
     productFlavors {
@@ -70,13 +60,9 @@ android {
 }
 
 dependencies {
-    // NewPipe Extractor (usado pelo MethodChannel NativeExtractor)
     implementation("com.github.teamnewpipe:newpipeextractor:v0.25.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    // ✅ Corrige "Missing class com.google.re2j.*" (referência opcional do Jsoup)
     implementation("com.google.re2j:re2j:1.7")
-
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.2")
 }
 

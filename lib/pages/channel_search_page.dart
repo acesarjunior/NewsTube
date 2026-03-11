@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/youtube_channel_search_service.dart';
+import '../services/app_strings.dart';
+import '../widgets/app_shell_actions.dart';
 import 'channel_page.dart';
 
 class ChannelSearchPage extends StatefulWidget {
@@ -73,8 +75,9 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Buscar canais')),
+      appBar: AppBar(title: Text(s.t('search_channels')), actions: const [AppShellActions()]),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -83,7 +86,7 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _search(),
             decoration: InputDecoration(
-              hintText: 'Digite o nome do canal',
+              hintText: s.t('enter_channel_name'),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.search),
                 onPressed: _search,
@@ -99,13 +102,13 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
           ],
 
           if (_error != null) ...[
-            Text('Erro: $_error'),
+            Text('${s.t('error')}: $_error'),
             const SizedBox(height: 12),
           ],
 
           if (!_loading && _channels.isEmpty && _ctrl.text.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Center(child: Text('Nenhum canal encontrado.')),
+            Center(child: Text(s.t('no_channel_found'))),
           ],
 
           ..._channels.map((c) {
@@ -117,7 +120,7 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
               child: ListTile(
                 leading: _thumb(context, thumb),
                 title: Text(title),
-                subtitle: const Text('Canal'),
+                subtitle: Text(s.t('channel')),
                 onTap: () {
                   Navigator.push(
                     context,

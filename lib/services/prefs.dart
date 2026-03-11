@@ -5,6 +5,7 @@ class AppPrefs {
   static const _kThemeMode = 'theme_mode'; // 'light' | 'dark' | 'system'
   static const _kTranslateTarget = 'translate_target_lang';
   static const _kTranslateRemind = 'translate_remind_enabled';
+  static const _kAppLanguage = 'app_language';
 
   static Future<ThemeMode> loadThemeMode() async {
     final v = (await AppDb.getPrefString(_kThemeMode) ?? 'dark').toLowerCase().trim();
@@ -28,11 +29,32 @@ class AppPrefs {
     await AppDb.setPrefString(_kThemeMode, v);
   }
 
+  static Future<String> loadAppLanguage({String fallback = 'en'}) async {
+    final v = await AppDb.getPrefString(_kAppLanguage);
+    final lang = (v ?? fallback).trim().toLowerCase();
+    switch (lang) {
+      case 'pt':
+      case 'fr':
+      case 'de':
+      case 'it':
+      case 'cs':
+      case 'es':
+      case 'ja':
+      case 'en':
+        return lang;
+      default:
+        return fallback;
+    }
+  }
+
+  static Future<void> saveAppLanguage(String lang) async {
+    await AppDb.setPrefString(_kAppLanguage, lang.trim().toLowerCase());
+  }
+
   static Future<String> loadTranslateTargetLang({String fallback = 'en'}) async {
     final v = await AppDb.getPrefString(_kTranslateTarget);
     return (v ?? fallback).trim();
   }
-
 
   static Future<String?> loadTranslateTargetLangNullable() async {
     final v = await AppDb.getPrefString(_kTranslateTarget);

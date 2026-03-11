@@ -4,6 +4,7 @@ import '../services/youtube_channel_search_service.dart';
 import '../services/youtube_channel_videos_service.dart';
 import '../services/youtube_rss_channel_service.dart';
 import '../services/youtube_video_search_service.dart';
+import '../services/app_strings.dart';
 import 'channel_page.dart';
 import 'video_transcript_page.dart';
 import '../services/youtube_innertube_config.dart';
@@ -253,7 +254,7 @@ class SearchPageState extends State<SearchPage> {
         if (!mounted) return;
         setState(() {
           _loadingFeed = false;
-          _feedError = 'Nenhum canal nos favoritos.';
+          _feedError = AppStrings.of(context).t('no_favorite_channels');
         });
         return;
       }
@@ -542,7 +543,7 @@ class SearchPageState extends State<SearchPage> {
       setState(() {
         _loadingMore = false;
         _videoHasMore = false;
-        _error = 'Não foi possível carregar mais resultados: $e';
+        _error = '${AppStrings.of(context).t('load_more_failed')}: $e';
       });
     }
   }
@@ -584,6 +585,7 @@ class SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final hasQuery = _ctrl.text.trim().isNotEmpty;
+    final s = AppStrings.of(context);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -606,12 +608,12 @@ class SearchPageState extends State<SearchPage> {
                   textInputAction: TextInputAction.search,
                   onSubmitted: (_) => _search(),
                   decoration: InputDecoration(
-                    hintText: 'Buscar vídeos e canais',
+                    hintText: s.t('search_videos_channels'),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          tooltip: 'Atualizar',
+                          tooltip: s.t('reload'),
                           icon: const Icon(Icons.refresh),
                           onPressed: () async {
                             if (_ctrl.text.trim().isNotEmpty) {
@@ -623,7 +625,7 @@ class SearchPageState extends State<SearchPage> {
                           },
                         ),
                         IconButton(
-                          tooltip: 'Buscar',
+                          tooltip: s.t('search'),
                           icon: const Icon(Icons.search),
                           onPressed: _search,
                         ),
@@ -658,7 +660,7 @@ class SearchPageState extends State<SearchPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Favoritos recentes', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Text(s.t('favorites'), style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   ..._favVideos.map((v) {
                     final title = (v['title'] ?? '').toString();
@@ -679,7 +681,7 @@ class SearchPageState extends State<SearchPage> {
                               overflow: TextOverflow.ellipsis,
                               style: read ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant) : null,
                             ),
-                            subtitle: Text(read ? '$channel • Lido' : channel),
+                            subtitle: Text(read ? '$channel • ${s.t('read')}' : channel),
                             trailing: read ? const Icon(Icons.done_all) : null,
                             onTap: () async {
                               await Navigator.push(
@@ -721,14 +723,14 @@ class SearchPageState extends State<SearchPage> {
           if (!_loading && _error == null && _channels.isEmpty && _videos.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.all(16),
-              sliver: _sliverBox(const Text('Nenhum resultado.')),
+              sliver: _sliverBox(Text(s.t('no_channel_found'))),
             ),
 
           // ✅ Canais primeiro
           if (_channels.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              sliver: _sliverBox(const Text('Canais', style: TextStyle(fontWeight: FontWeight.w700))),
+              sliver: _sliverBox(Text(s.t('channels'), style: const TextStyle(fontWeight: FontWeight.w700))),
             ),
 
           if (_channels.isNotEmpty)
@@ -746,10 +748,10 @@ class SearchPageState extends State<SearchPage> {
                     child: ListTile(
                       leading: _thumb(context, thumb, fallback: Icons.person_outline),
                       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(isFav ? 'Canal favorito' : 'Canal'),
+                      subtitle: Text(isFav ? s.t('favorite_channel') : s.t('channel')),
                       trailing: IconButton(
                         icon: Icon(isFav ? Icons.star : Icons.star_border, color: isFav ? Colors.amber : null),
-                        tooltip: isFav ? 'Remover favorito' : 'Favoritar',
+                        tooltip: isFav ? s.t('remove_favorite') : s.t('favorites'),
                         onPressed: () async {
                           // atualização otimista para feedback imediato
                           setState(() {
@@ -784,7 +786,7 @@ class SearchPageState extends State<SearchPage> {
           if (_videos.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              sliver: _sliverBox(const Text('Vídeos', style: TextStyle(fontWeight: FontWeight.w700))),
+              sliver: _sliverBox(Text(s.t('videos'), style: const TextStyle(fontWeight: FontWeight.w700))),
             ),
 
           if (_videos.isNotEmpty)
@@ -834,7 +836,7 @@ class SearchPageState extends State<SearchPage> {
                                   _isFavVideo(url) ? Icons.star : Icons.star_border,
                                   color: _isFavVideo(url) ? Colors.amber : null,
                                 ),
-                                tooltip: _isFavVideo(url) ? 'Remover favorito' : 'Favoritar',
+                                tooltip: _isFavVideo(url) ? s.t('remove_favorite') : s.t('favorites'),
                                 onPressed: () async {
                               final vid = _videoIdFromUrl(url);
                               final key = vid.isEmpty ? url : vid;
@@ -896,7 +898,7 @@ class SearchPageState extends State<SearchPage> {
           if (!_loadingFeed && _feedError == null && _feedVisible.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              sliver: _sliverBox(const Text('Últimos vídeos dos favoritos', style: TextStyle(fontWeight: FontWeight.w700))),
+              sliver: _sliverBox(Text(s.t('videos'), style: const TextStyle(fontWeight: FontWeight.w700))),
             ),
 
           if (!_loadingFeed && _feedError == null && _feedVisible.isNotEmpty)
@@ -946,7 +948,7 @@ class SearchPageState extends State<SearchPage> {
                                   _isFavVideo(url) ? Icons.star : Icons.star_border,
                                   color: _isFavVideo(url) ? Colors.amber : null,
                                 ),
-                                tooltip: _isFavVideo(url) ? 'Remover favorito' : 'Favoritar',
+                                tooltip: _isFavVideo(url) ? s.t('remove_favorite') : s.t('favorites'),
                                 onPressed: () async {
                               final vid = _videoIdFromUrl(url);
                               final key = vid.isEmpty ? url : vid;
@@ -990,7 +992,7 @@ class SearchPageState extends State<SearchPage> {
           if (!_loadingFeed && _feedError == null && _feedVisible.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.all(16),
-              sliver: _sliverBox(const Text('Nenhum vídeo para exibir.')),
+              sliver: _sliverBox(Text(s.t('no_video_found_channel'))),
             ),
         ],
         const SliverToBoxAdapter(child: SizedBox(height: 24)),

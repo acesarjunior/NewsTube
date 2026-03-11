@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'search_page.dart';
+import '../services/app_strings.dart';
+import '../widgets/app_shell_actions.dart';
 import 'favorites_page.dart';
+import 'search_page.dart';
 
 class HomePage extends StatefulWidget {
-  final VoidCallback? onToggleTheme;
-  const HomePage({super.key, this.onToggleTheme});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -25,6 +26,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+
     final pages = <Widget>[
       SearchPage(key: _searchKey),
       FavoritesPage(key: _favKey),
@@ -32,15 +35,8 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NewsTube'),
-        actions: [
-          if (widget.onToggleTheme != null)
-            IconButton(
-              tooltip: 'Alternar tema',
-              icon: const Icon(Icons.dark_mode_outlined),
-              onPressed: widget.onToggleTheme,
-            ),
-        ],
+        title: Text(s.t('app_title')),
+        actions: const [AppShellActions()],
       ),
       body: IndexedStack(index: _idx, children: pages),
       bottomNavigationBar: NavigationBar(
@@ -57,9 +53,9 @@ class _HomePageState extends State<HomePage> {
             });
           }
         },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: 'Buscar'),
-          NavigationDestination(icon: Icon(Icons.star), label: 'Favoritos'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.search), label: s.t('search')),
+          NavigationDestination(icon: const Icon(Icons.star), label: s.t('favorites')),
         ],
       ),
     );
