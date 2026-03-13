@@ -39,7 +39,6 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
   String _text = '';
   String _status = 'Loading...';
 
-  bool _showTranslateBanner = false;
   String? _captionLang;
   String? _systemLang;
   bool _translateRemindEnabled = true;
@@ -51,6 +50,10 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
   String? _grammarText;
   bool _showingTranslated = false;
   bool _showingGrammar = false;
+  bool _checkingOnDeviceRewrite = true;
+  bool _onDeviceRewriteAvailable = false;
+
+  bool _initialized = false;
 
   String get _displayText {
     if (_showingGrammar && _grammarText != null) return _grammarText!;
@@ -59,7 +62,9 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
   }
 
   String get _displayTitle {
-    if (_showingTranslated && _translatedTitle != null) return _translatedTitle!;
+    if (_showingTranslated && _translatedTitle != null) {
+      return _translatedTitle!;
+    }
     return decodeHtmlEntities(widget.title);
   }
 
@@ -67,7 +72,42 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
   void initState() {
     super.initState();
     _systemLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-    _run();
+    _refreshOnDeviceRewriteAvailability();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      _run();
+    }
+  }
+
+  String _currentDisplayLanguage() {
+    if (_showingTranslated) {
+      return _targetLang.trim().isEmpty ? 'auto' : _targetLang.trim();
+    }
+
+    final cap = (_captionLang ?? '').trim();
+    if (cap.isNotEmpty) return cap;
+
+    final sys = (_systemLang ?? '').trim();
+    if (sys.isNotEmpty) return sys;
+
+    return 'auto';
+  }
+
+  Future<void> _refreshOnDeviceRewriteAvailability() async {
+    final supported = await _gsvc.isSupported(
+      language: _currentDisplayLanguage(),
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _onDeviceRewriteAvailable = supported;
+      _checkingOnDeviceRewrite = false;
+    });
   }
 
   String _prettyTranscript(String input) {
@@ -149,7 +189,10 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     final formatted = _prettyTranscript(r.text);
 
     _captionLang = (r.captionLang ?? '').trim();
-    await AppDb.markTranscribed(videoUrl: widget.videoUrl, captionLang: _captionLang);
+    await AppDb.markTranscribed(
+      videoUrl: widget.videoUrl,
+      captionLang: _captionLang,
+    );
 
     _translateRemindEnabled = await AppPrefs.loadTranslateReminderEnabled();
     _hasBeenTranslated = await AppDb.hasBeenTranslated(widget.videoUrl);
@@ -157,15 +200,16 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     _targetLangChosen = saved != null;
     _targetLang = saved ?? (_systemLang ?? 'en');
 
-    final cap = (_captionLang ?? '').toLowerCase();
-    final sys = (_systemLang ?? '').toLowerCase();
-    _showTranslateBanner = _translateRemindEnabled && !_hasBeenTranslated && cap.isNotEmpty && sys.isNotEmpty && cap != sys;
-
     setState(() {
       _loading = false;
       _text = formatted;
-      _status = s.t('status_caption', params: {'lang': (r.captionLang ?? '').trim()});
+      _status = s.t(
+        'status_caption',
+        params: {'lang': (r.captionLang ?? '').trim()},
+      );
     });
+
+    await _refreshOnDeviceRewriteAvailability();
   }
 
   Future<void> _pickTargetLang() async {
@@ -214,8 +258,13 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     final s = AppStrings.of(context);
     if (_text.trim().isEmpty) return;
 
-    await AppDb.markTranslated(videoUrl: widget.videoUrl, targetLang: _targetLang);
-    final src = (_captionLang ?? '').trim().isEmpty ? 'auto' : (_captionLang ?? '').trim();
+    await AppDb.markTranslated(
+      videoUrl: widget.videoUrl,
+      targetLang: _targetLang,
+    );
+    final src = (_captionLang ?? '').trim().isEmpty
+        ? 'auto'
+        : (_captionLang ?? '').trim();
 
     setState(() {
       _status = s.t('translate');
@@ -244,15 +293,15 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _status = s.t('translation_failed'));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.t('translation_failed'))));
       return;
     }
 
     if (!mounted) return;
     setState(() {
       _hasBeenTranslated = true;
-      _showTranslateBanner = false;
     });
+
+    await _refreshOnDeviceRewriteAvailability();
   }
 
   Future<void> _translate() async {
@@ -268,24 +317,23 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     final s = AppStrings.of(context);
     if (_displayText.trim().isEmpty) return;
 
-    final lang = _showingTranslated
-        ? _targetLang
-        : ((_captionLang ?? '').isEmpty ? AppControllerScope.of(context).locale.languageCode : _captionLang!);
+    final lang = _currentDisplayLanguage();
 
     setState(() => _status = s.t('correcting_grammar'));
     try {
-      final corrected = await _gsvc.correct(text: _displayText, language: lang);
+      final corrected = await _gsvc.correct(
+        text: _displayText,
+        language: lang,
+      );
       if (!mounted) return;
       setState(() {
         _grammarText = corrected;
         _showingGrammar = true;
         _status = s.t('grammar_fixed');
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.t('grammar_fixed'))));
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _status = s.t('grammar_failed'));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.t('grammar_failed'))));
+      setState(() => _status = '${s.t('grammar_failed')}: $e');
     }
   }
 
@@ -294,7 +342,11 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
     if (u.isEmpty) return '';
     if (u.startsWith('//')) return 'https:$u';
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
-    if (u.startsWith('yt3.') || u.startsWith('i.ytimg.') || u.startsWith('lh3.')) return 'https://$u';
+    if (u.startsWith('yt3.') ||
+        u.startsWith('i.ytimg.') ||
+        u.startsWith('lh3.')) {
+      return 'https://$u';
+    }
     return u;
   }
 
@@ -308,10 +360,13 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
         child: u.isEmpty
             ? const Center(child: Icon(Icons.play_circle_outline, size: 48))
             : Image.network(
-                u,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.play_circle_outline, size: 48)),
-              ),
+          u,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+          const Center(
+            child: Icon(Icons.play_circle_outline, size: 48),
+          ),
+        ),
       ),
     );
   }
@@ -339,7 +394,9 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: _displayText));
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.t('copied'))));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(s.t('copied'))),
+                );
               },
             ),
           if (canCopy)
@@ -356,14 +413,20 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
             ),
           if (canCopy)
             IconButton(
-              tooltip: s.t('grammar_fix'),
-              icon: const Icon(Icons.spellcheck),
-              onPressed: _correctGrammar,
+              tooltip: 'Revisar texto',
+              icon: const Icon(Icons.auto_fix_high),
+              onPressed: _checkingOnDeviceRewrite ? null : _correctGrammar,
             ),
           if (_translatedText != null)
             IconButton(
-              tooltip: _showingTranslated ? s.t('view_original') : s.t('view_translation'),
-              icon: Icon(_showingTranslated ? Icons.article_outlined : Icons.swap_horiz),
+              tooltip: _showingTranslated
+                  ? s.t('view_original')
+                  : s.t('view_translation'),
+              icon: Icon(
+                _showingTranslated
+                    ? Icons.article_outlined
+                    : Icons.swap_horiz,
+              ),
               onPressed: () {
                 setState(() {
                   _showingTranslated = !_showingTranslated;
@@ -376,33 +439,6 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_showTranslateBanner)
-            MaterialBanner(
-              content: Text(
-                s.t('translate_banner', params: {
-                  'caption': _captionLang ?? '',
-                  'system': _systemLang ?? '',
-                }),
-              ),
-              leading: const Icon(Icons.info_outline),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    await AppPrefs.setTranslateReminderEnabled(false);
-                    if (!mounted) return;
-                    setState(() {
-                      _translateRemindEnabled = false;
-                      _showTranslateBanner = false;
-                    });
-                  },
-                  child: Text(s.t('dont_remind')),
-                ),
-                FilledButton(
-                  onPressed: _translate,
-                  child: Text(s.t('translate')),
-                ),
-              ],
-            ),
           _thumb(context, widget.thumb),
           const SizedBox(height: 12),
           Text(
@@ -412,7 +448,9 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
           const SizedBox(height: 4),
           Text(
             safeChannel,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
           if (_loading) ...[
@@ -420,7 +458,10 @@ class _VideoTranscriptPageState extends State<VideoTranscriptPage> {
             const SizedBox(height: 12),
             const LinearProgressIndicator(),
           ] else if (_error != null) ...[
-            Text('${s.t('error')}: $_error', style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              '${s.t('error')}: $_error',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 8),
             Text(s.t('captions_only_note')),
           ] else ...[

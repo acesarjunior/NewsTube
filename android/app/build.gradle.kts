@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.newstube"
-        minSdk = 24
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -63,6 +63,7 @@ dependencies {
     implementation("com.github.teamnewpipe:newpipeextractor:v0.25.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.re2j:re2j:1.7")
+    implementation("com.google.mlkit:genai-proofreading:1.0.0-beta1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.2")
 }
 

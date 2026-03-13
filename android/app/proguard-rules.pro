@@ -1,5 +1,7 @@
-# --- NewPipeExtractor / Rhino / Jsoup ---
-# Evita falhas do R8 por classes opcionais que não existem no Android.
+# --- NewPipeExtractor / Rhino / Jsoup / OkHttp ---
+
+# Mantém atributos úteis para reflexão
+-keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 
 # Rhino
 -keep class org.mozilla.javascript.** { *; }
@@ -7,15 +9,20 @@
 -dontwarn org.mozilla.javascript.tools.**
 -dontwarn org.mozilla.javascript.**
 
-# Classes que não existem no Android, mas aparecem como referências opcionais em algumas libs
+# Referências opcionais que não existem no Android
 -dontwarn java.beans.**
 -dontwarn javax.script.**
 -dontwarn com.google.re2j.**
 
-# Jsoup (mantém o básico)
+# Jsoup
 -keep class org.jsoup.** { *; }
 -dontwarn org.jsoup.**
 
-# Mantém o que é acessado por reflexão no MainActivity (caption tracks etc.)
+# NewPipe Extractor
 -keep class org.schabi.newpipe.extractor.** { *; }
 -dontwarn org.schabi.newpipe.extractor.**
+
+# OkHttp / Okio
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
